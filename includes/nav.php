@@ -31,6 +31,7 @@
                 }
                   
                 ?>
+                <li><a href="admin">Admin</li>
                 </ul>
             </div>
             <!-- /.navbar-collapse -->

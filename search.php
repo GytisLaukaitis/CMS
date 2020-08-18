@@ -46,11 +46,11 @@
 
     if(isset($_POST['btn_search']))
     {
-        echo 'Working';
         $Search = $_POST['search'];
-        $sql = "select * from posts where post_tags like '%Search%'";
-        $result = mysqli_query($con, $sql);
+        $sql = "select * from posts where post_tags like '%$Search%'";
+        $result = mysqli_query($con,$sql);
     
+        if(mysqli_num_rows($result)) {
 
         while($row = mysqli_fetch_assoc($result)) {
 
@@ -89,6 +89,7 @@
         else {
             echo "<h2> Record not found </h2>";
         }
+    }
 
         ?>
             </div>

@@ -3,7 +3,4 @@
    if (!$con) {
     die("Database connection failed");
    }
-   else {
-       echo "Connected";
-   }
 ?>
