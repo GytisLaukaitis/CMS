@@ -1,113 +1,112 @@
-<?php require_once ('./includes/header.php'); ?>
+<?php include 'admin_includes/admin_header.php';?>
+<?php include 'admin_includes/admin_cat_logic.php';?>
 
-<!-- Header -->
 <body>
+	<div id="wrapper">
+	<?php include 'admin_includes/admin_nav.php';?>
 
-    <div id="wrapper">
+		<div id="page-wrapper">
+			<div class="container-fluid">
 
-        <!-- Navigation -->
-        <?php require_once ('./includes/nav.php') ?>
-
-        <div id="page-wrapper">
-
-            <div class="container-fluid">
-
-                <!-- Page Heading -->
-                <div class="row">
-                    <div class="col-lg-12">
-                        <h1 class="page-header">
-                            <small>Author</small>
-                        </h1>
-                    </div>
-                    <!-- Add new category -->
-                    <div class="col-lg-6">
-
-                    <?php
-                        if(isset($_POST['btn_category'])) {
-
-                            if ($_POST['category'] == "") {
-                                echo '<p class="allert allert-danger"> Please enter category </p>';
-                            } else {
-                            $Add_Cat = $_POST['category'];
-                            $query = "insert into categories (cat_title) values ('$Add_Cat')";
-                            mysqli_query($con,$query);
-                            }
-                        }
-                    ?>
-                    <!-- Add new category -->
-                        <form action="" method="POST">
-                        <label> Add New Category </label>
-                        <input type="text" name="category" placeholder="Category" class="form-control mb-2">
-                        <button class="btn btn-succes" type="submit" name="btn_category"> Add Category </button>
-                        </form>
-
-                        <!-- Edit category -->
-                        <?php
-                        if (isset($_GET['edit'])) {
-
-                            $Edit_id = $_GET['edit'];
-                            $sql = "select * from categories where cat_id = '$Edit_id'";
-                            $result = mysqli_query($con,$sql);
-                            $data = mysqli_fetch_assoc($result);
-                            ?>
-                            <form action="update.php" method="POST">
-                        <div class="form group">
-                        <label> Edit Category </label>
-                        <input type="text" name="edit_category" placeholder="Category" value="<?php echo $data['cat_title']; ?>" class="form-control mb-2">
-                        <input type="hidden" name="edit_id" value="<?php echo $data['cat_id']; ?>">
-                        </div>
-                        <div class="form group">
-                        <button class="btn btn-succes" type="submit" name="btn_edit_category"> Edit Category </button>
-                        </div>
-                        </form>
-                            <?php
-                        }
-
-                        ?>
-                    </div>
-                    <div class="col-lg-6">
-                        <table class="table table-bordered">
-                            <tr>
-                                <th style="width: 20%"> Category ID </th>
-                                <th style="width: 50%"> Category Name </th>
-                                <th style="width: 30%" colspan="2"> Operations </th>
-                            </tr>
-                            <tr>
-                            <?php
-                                
-                                $sql = "select * from categories ";
-                                $result = mysqli_query($con,$sql);
-
-                                while($row = mysqli_fetch_assoc($result)) {
-                     
-                            ?>
-                                <td><?php echo $row['cat_id']; ?></td>
-                                <td><?php echo $row['cat_title']; ?></td>
-                                <td><a href="categories.php?Del=<?php echo $row['cat_id']; ?>" class="btn btn-danger"><span class="fa fa-trash"></span></a></td>
-                                <td><a href="categories.php?edit=<?php echo $row['cat_id']; ?>" class="btn btn-success"><span class="fa fa-edit"></span></a></td>
-                            </tr>
-                            <?php
-                                }
-
-                                // Delete the record
-                                if(isset($_GET['Del'])) {
-                                    $Del = $_GET['Del'];
-                                    $sql = "delete from categories where cat_id='$Del'";
-                                    $result = mysqli_query($con,$sql);
-
-                                    if ($result) {
-                                        header("location: categories.php");
-                                    }
-                                }
-                                ?>
-                        </table>
-                    </div>
-                </div>
-          <!-- Footer -->
-          </div>
-            <!-- /.container-fluid -->
-
-        </div>
-        <!-- /#page-wrapper -->
-
-          <?php require_once ('./includes/footer.php') ?>
+				<!-- Page Heading -->
+				<div class="row">
+					<div class="col-md-12">
+						<h1 class="page-header"><?php echo SITENAME;?> Admin
+							<small id="small"> Category Manager</small>
+						</h1>
+					</div>
+				</div>		<!-- /.row -->
+				
+				<!-- --------- only 'Administrator' can use this page ------ -->
+				<?php if($_SESSION['role'] != 'Administrator'):?>
+				<h2>Sorry! You are not authorized to use this page.</h2>
+				<a href="../index.php" class="btn btn-primary add-del-btn">Home</a>
+				<a href="posts.php?source=" class="btn btn-primary add-del-btn">View Posts</a>
+				<a href="profile.php" class="btn btn-primary add-del-btn">Profile</a>
+				<a href="../includes/logout.php" class="btn btn-primary add-del-btn">Log Out</a>
+				<?php else:?>
+				
+				<?php
+				// display an alert message from result of $_GET or $_POST;
+				// this row is not displayed if both $_GET and $_POST are not set
+				if(isset($div_msg)):?>
+				<div class="row">
+					<div class="col-md-12">
+						<div class="alert alert-<?php echo $div_class;?>">
+							<?php echo $div_msg;?>
+						</div>
+					</div>
+				</div>
+				<?php endif; ?>
+									
+				<div class="row">
+					<div class="col-md-6">		
+						<table class="table table-condensed">
+							<thead>
+								<tr>
+									<th>Category ID</th>
+									<th>Category Title</th>
+									<th></th>
+									<th></th>	
+								</tr>												
+							</thead>											
+							<tbody>
+							<?php
+								// get categories to display in table which will include any
+								// newly inserted categories
+								$q = "SELECT * FROM cms_categories ORDER BY cat_title";
+								$cats = mysqli_query($con, $q);
+							?>					
+							<?php foreach($cats as $cat):?>
+								<tr>
+									<td><?php echo $cat['cat_id'];?></td>
+									<td><?php echo $cat['cat_title'];?></td>
+									<td><a class="btn btn-primary"
+										href="categories.php?edit=<?php echo $cat['cat_id'];?>">
+										<i class="fa fa-pencil"></i> Edit</a>
+									</td>	
+									<td><a onclick="return confirm('Are you sure you want to delete this category?');" 
+										class="btn btn-danger"
+										href="categories.php?del=<?php echo $cat['cat_id'];?>">
+										<i class="fa fa-trash-o"></i> Delete</a>
+									</td>													
+								</tr>
+							<?php endforeach;?>
+							</tbody>									
+						</table>
+					</div>	
+				
+					<div class="col-md-6">
+						<!-- form to add new category -->
+						<form action="categories.php" method="post">
+							<div class="form-group1">
+								<label for="cat_title">Add Category Title: </label>
+								<input class="form-control" type="text" name="add_cat_title">
+							</div>
+							<div class="form-group1">
+								<button type="submit" name="addsubmit" class="btn btn-success">
+									<i class="fa fa-plus"></i> Add Category
+								</button>
+							</div>
+						</form>
+						<hr />
+						<!-- form to edit category -->
+						<form action="categories.php" method="post">
+							<div class="form-group2">
+								<label for="edit_cat_title">Edit Category Title: </label>
+								<input class="form-control" type="text" name="edit_cat_title"
+									value="<?php echo $edit_cat['cat_title'];?>">
+							</div>
+							<div class="form-group2">
+								<input class="form-control" type="hidden" name="edit_cat_id"
+									value="<?php echo $edit_cat['cat_id'];?>">
+							</div>
+							<div class="form-group2">
+								<button type="submit" name="editsubmit" class="btn btn-success"
+									<?php echo $btn_disabled;?>>
+									<i class="fa fa-database"></i> Update Category
+								</button>
+							</div>
+						</form>											
+				<?php endif;?>		<!-- only 'Administrator' can use this page -->
+<?php include 'admin_includes/admin_footer.php';?>

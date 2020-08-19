@@ -9,6 +9,7 @@
 body {
     margin-top: 100px;
     background-color: #222;
+    font-family: 'Roboto Condensed', sans-serif;
 }
 
 @media(min-width:768px) {
@@ -24,7 +25,8 @@ body {
 #page-wrapper {
     width: 100%;
     padding: 0;
-    background-color: #fff;
+    background-color: lightyellow;
+    min-height: 301px;
 }
 
 .huge {
@@ -34,7 +36,7 @@ body {
 
 @media(min-width:768px) {
     #wrapper {
-        padding-left: 225px;
+        padding-left: 175px;
     }
 
     #page-wrapper {
@@ -85,6 +87,11 @@ body {
     white-space: normal;
 }
 
+#sidebar li a.active {
+	background: lightyellow !important;
+	color: black
+}
+
 ul.message-dropdown {
     padding: 0;
     max-height: 250px;
@@ -116,9 +123,9 @@ ul.alert-dropdown {
     .side-nav {
         position: fixed;
         top: 51px;
-        left: 225px;
-        width: 225px;
-        margin-left: -225px;
+        left: 175px;
+        width: 175px;
+        margin-left: -175px;
         border: none;
         border-radius: 0;
         overflow-y: auto;
@@ -126,7 +133,7 @@ ul.alert-dropdown {
     }
 
     .side-nav>li>a {
-        width: 225px;
+        width: 175px;
     }
 
     .side-nav li a:hover,
@@ -221,4 +228,91 @@ ul.alert-dropdown {
 
 .panel-yellow a:hover {
     color: #df8a13;
+}
+/*****************/
+/* my custom css */
+/*****************/
+
+/* main heading for each page in Admin */
+h1.page-header {
+	padding: 0;
+	margin: 15px 0 25px 0;
+}
+
+/* heading for forms in Admin */
+h2.page-title {
+	margin: 0 0 10px 0;
+	padding:0;
+}
+
+/* general alert box */
+.alert {
+	margin: 0 0 5px 0;
+}
+
+/* bulk action dropdown and buttons need to move down */
+.view-posts-bulk {
+	margin-top: 10px;
+}
+
+#view-posts-arrow {
+	padding: 0;
+	margin: 10px 0 0 13px;
+}
+
+/* center checkboxes in view_all_posts.php */
+.checkbox_column {
+	text-align: center;
+}
+
+/* <select> dropdown boxes should display in separate line */
+select {
+	display: block;
+	font-size: 1.2em;
+}
+
+/* css for radio buttons and file input on admin_edit_post.php */
+#radios {
+	border: 1px solid #cccccc;
+	border-radius: 5px;
+	padding: 7px;
+	min-height: 223px !important;
+	background: white;
+}
+
+form img {
+	margin: 0 auto 8px auto;
+}
+
+input[type='radio'] {
+	margin: 5px 0 5px 15px;
+	padding: 0;
+}
+
+input[type='file'] {
+	font-size: 1.1em;
+	margin: 3px 0 9px 18%;
+}
+
+/* button to add/update category in categories.php */
+button[type='submit'] {
+	margin-top: 12px;
+}
+
+.add-del-btn {
+	margin: 10px;
+}
+
+/* horizontal rule between edit and delete buttons in admin_view_all_posts.php */
+td hr {
+	border: none;
+	margin: 0;
+	padding: 2px 0;
+}
+
+footer {
+	color: #9d9d9d;
+	text-align: right;
+	padding-right: 3%;
+	margin-top: 30px;
 }

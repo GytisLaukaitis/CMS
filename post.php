@@ -1,243 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php include 'includes/database.php';?>
+<?php include 'includes/header.php';?>
+<?php include 'includes/navigation.php';?>
+<?php include 'includes/functions.php';?>
 
-<head>
+<?php
+	// ---------- when 'Submit' button for comment is pressed ------------
+	if(isset($_POST['commentsubmit'])) {
+		$c_author = $_SESSION['username'];
+		$c_content = mysqli_real_escape_string($con, $_POST['comment_content']);
+		
+		// validate input
+		if(empty($c_content)) {
+			$div_class = 'danger';
+			$div_msg = 'You must enter comment to submit.';
+		} else {
+			$c_post_id = $_GET['pid'];
+			
+			$q = "INSERT INTO cms_comments 
+					(comment_post_id, comment_author, comment_content, comment_date)
+					VALUES ($c_post_id, '$c_author', '$c_content', now())";
+			
+			$result = mysqli_query($con, $q);
+			
+			$div_info = confirmQuery($result, 'insert');
+			$div_class 		= $div_info['div_class'];
+			$div_msg 			= $div_info['div_msg'];
+		}
+	}
+?>
 
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
+<?php
+	// ----------- get the post_id passed from index.php -----------------
+	if(isset($_GET['pid'])) {
+		$pid = mysqli_real_escape_string($con, $_GET['pid']);
+		
+		$q = "UPDATE cms_posts SET post_views_count = post_views_count + 1
+					WHERE post_id = $pid";
+		mysqli_query($con, $q);
+		
+		$q = "SELECT cms_posts.*, cms_users.user_image, 
+					count(cms_comments.comment_id) AS post_comment_count 
+					FROM cms_posts 
+					INNER JOIN cms_users ON cms_posts.post_author = cms_users.user_uname 
+					LEFT OUTER JOIN cms_comments ON cms_posts.post_id = cms_comments.comment_post_id 
+					WHERE cms_posts.post_id = $pid 
+					GROUP BY cms_posts.post_id";
+					
+		$result = mysqli_query($con, $q);
+		
+		if(!$result) {
+			$div_class = 'danger';
+			$div_msg = 'Database error: ' . mysqli_error($con);
+		} else {
+			$post = mysqli_fetch_array($result);	
+		}
+	}
+?>
+	<!--------------------- special alert div ------------------------ -->
+	<?php if(!empty($div_msg)):?>
+	<div class="alert alert-<?php echo $div_class;?>">
+		<?php echo $div_msg;?>
+	</div>
+	<?php endif;?>			
+	<!-- -------------------------the post --------------------------- -->
+	<h2>
+	<a href="#"><?php echo $post['post_title'];?></a>
+	</h2>
+	<p class="lead">by 
+		<a href="aposts.php?u=<?php echo $post['post_author'];?>">
+			<?php echo $post['post_author'];?>
+			<img src="images/<?php echo $post['user_image'];?>" width="64px" height="64px">
+		</a>
+	</p>
+	<p><span class="glyphicon glyphicon-time"></span>
+	<?php date_default_timezone_set(TZ); ?>
+		Posted on <?php echo date('M. j, Y, g:i a', strtotime($post['post_date']));?></p>
+	<hr>
+	<?php empty($post['post_image'])?$post['post_image']='post_default.png':
+		$post['post_image'];?>
+	<img class="img-responsive" src="images/<?php echo $post['post_image'];?>" alt="">
+	<hr>
+	<p><?php echo $post['post_content'];?></p>
+	<p><span class="glyphicon glyphicon-eye-open"></span>&nbsp;
+		<?php echo $post['post_views_count'];?>&nbsp;views&nbsp;&nbsp;
+		<span class="glyphicon glyphicon-comment"></span>&nbsp;
+		<?php echo $post['post_comment_count'];?>&nbsp;comments
+	</p>
+	<hr>
+	
+	<!----------------------- comments form -------------------------- -->
+	<?php if(isset($_SESSION['userid'])):?>
+	<div class="well">
+		<h4>Leave a Comment:</h4>
 
-    <title>Blog Post - Start Bootstrap Template</title>
+		<form action="post.php?pid=<?php echo $post['post_id'];?>" method="post" role="form">
+			<div class="form-group">
+				<label for="comment_author">Your Username</label>
+				<div class="well well-sm">
+					<?php echo $_SESSION['username'];?>
+				</div>		
+			</div>
+			<div class="form-group">
+				<label for="comment_content">Your Comment</label>
+				<textarea class="form-control" name="comment_content" rows="4"></textarea>
+			</div>
+			<button type="submit" class="btn btn-primary" name="commentsubmit">Submit</button>
+		</form>
+	</div>
+	<?php endif;?>
+	<hr>
+	<!--------------------- posted comments -------------------------- -->
+<?php
+	$pid = $post['post_id'];
 
-    <!-- Bootstrap Core CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+	$q = "SELECT cms_comments.*, cms_users.user_uname, cms_users.user_image
+				FROM cms_comments
+				LEFT OUTER JOIN cms_users ON 
+				comment_author = user_uname
+				WHERE comment_post_id = $pid 
+				ORDER BY comment_date DESC";
+				
+	$comments = mysqli_query($con, $q);
+?>
+	
+<?php	if($comments):?>				
+	<?php foreach($comments as $comment):?>
+	<div class="media">
+	<?php if(!empty($comment['user_uname'])):?>
+		<a class="pull-left" href="aposts.php?u=<?php echo $comment['user_uname'];?>">			
+	<?php else:?>
+		<a class="pull-left" href="#">
+	<?php endif;?>
+		<?php if(!empty($comment['user_image'])):?>
+			<img class="media-object" src="images/<?php echo $comment['user_image'];?>"
+				width="64px" height="64px">
+		<?php else:?>
+			<img class="media-object" src="images/default.png"
+				width="64px" height="64px">
+		<?php endif;?>
+		</a>
+		<div class="media-body">
+			<h4 class="media-heading"><?php echo $comment['comment_author'];?>
+				<small><?php echo date('M. j, Y, g:i a', strtotime($comment['comment_date']));?>
+				&nbsp;&nbsp;
+				
+					<?php if($comment['comment_status']=='like'):?>
+					( <i class="glyphicon glyphicon-thumbs-up"></i>
+					<?php echo $post['post_author'].' likes this!'?> )
+					<?php elseif($comment['comment_status']=='dislike'):?>
+					( <i class="glyphicon glyphicon-thumbs-down"></i>
+					<?php echo $post['post_author'].' dislikes this!'?> )
+					<?php endif;?>
+				</small>
+			</h4>
+			<?php echo $comment['comment_content'];?>
+		</div>
+	</div>
+	<?php endforeach;?>
+<?php endif;?>
+	
+</div>		<!-- /.col-md-8 -->
 
-    <!-- Custom CSS -->
-    <link href="css/blog-post.css" rel="stylesheet">
-
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
-
-</head>
-
-<body>
-
-    <!-- Navigation -->
-    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <div class="container">
-            <!-- Brand and toggle get grouped for better mobile display -->
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">Start Bootstrap</a>
-            </div>
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li>
-                        <a href="#">About</a>
-                    </li>
-                    <li>
-                        <a href="#">Services</a>
-                    </li>
-                    <li>
-                        <a href="#">Contact</a>
-                    </li>
-                </ul>
-            </div>
-            <!-- /.navbar-collapse -->
-        </div>
-        <!-- /.container -->
-    </nav>
-
-    <!-- Page Content -->
-    <div class="container">
-
-        <div class="row">
-
-            <!-- Blog Post Content Column -->
-            <div class="col-lg-8">
-
-                <!-- Blog Post -->
-
-                <!-- Title -->
-                <h1>Blog Post Title</h1>
-
-                <!-- Author -->
-                <p class="lead">
-                    by <a href="#">Start Bootstrap</a>
-                </p>
-
-                <hr>
-
-                <!-- Date/Time -->
-                <p><span class="glyphicon glyphicon-time"></span> Posted on August 24, 2013 at 9:00 PM</p>
-
-                <hr>
-
-                <!-- Preview Image -->
-                <img class="img-responsive" src="http://placehold.it/900x300" alt="">
-
-                <hr>
-
-                <!-- Post Content -->
-                <p class="lead">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ducimus, vero, obcaecati, aut, error quam sapiente nemo saepe quibusdam sit excepturi nam quia corporis eligendi eos magni recusandae laborum minus inventore?</p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.</p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eos, doloribus, dolorem iusto blanditiis unde eius illum consequuntur neque dicta incidunt ullam ea hic porro optio ratione repellat perspiciatis. Enim, iure!</p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, nostrum, aliquid, animi, ut quas placeat totam sunt tempora commodi nihil ullam alias modi dicta saepe minima ab quo voluptatem obcaecati?</p>
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Harum, dolor quis. Sunt, ut, explicabo, aliquam tenetur ratione tempore quidem voluptates cupiditate voluptas illo saepe quaerat numquam recusandae? Qui, necessitatibus, est!</p>
-
-                <hr>
-
-                <!-- Blog Comments -->
-
-                <!-- Comments Form -->
-                <div class="well">
-                    <h4>Leave a Comment:</h4>
-                    <form role="form">
-                        <div class="form-group">
-                            <textarea class="form-control" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-                </div>
-
-                <hr>
-
-                <!-- Posted Comments -->
-
-                <!-- Comment -->
-                <div class="media">
-                    <a class="pull-left" href="#">
-                        <img class="media-object" src="http://placehold.it/64x64" alt="">
-                    </a>
-                    <div class="media-body">
-                        <h4 class="media-heading">Start Bootstrap
-                            <small>August 25, 2014 at 9:30 PM</small>
-                        </h4>
-                        Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-                    </div>
-                </div>
-
-                <!-- Comment -->
-                <div class="media">
-                    <a class="pull-left" href="#">
-                        <img class="media-object" src="http://placehold.it/64x64" alt="">
-                    </a>
-                    <div class="media-body">
-                        <h4 class="media-heading">Start Bootstrap
-                            <small>August 25, 2014 at 9:30 PM</small>
-                        </h4>
-                        Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-                        <!-- Nested Comment -->
-                        <div class="media">
-                            <a class="pull-left" href="#">
-                                <img class="media-object" src="http://placehold.it/64x64" alt="">
-                            </a>
-                            <div class="media-body">
-                                <h4 class="media-heading">Nested Start Bootstrap
-                                    <small>August 25, 2014 at 9:30 PM</small>
-                                </h4>
-                                Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus.
-                            </div>
-                        </div>
-                        <!-- End Nested Comment -->
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Blog Sidebar Widgets Column -->
-            <div class="col-md-4">
-
-                <!-- Blog Search Well -->
-                <div class="well">
-                    <h4>Blog Search</h4>
-                    <div class="input-group">
-                        <input type="text" class="form-control">
-                        <span class="input-group-btn">
-                            <button class="btn btn-default" type="button">
-                                <span class="glyphicon glyphicon-search"></span>
-                        </button>
-                        </span>
-                    </div>
-                    <!-- /.input-group -->
-                </div>
-
-                <!-- Blog Categories Well -->
-                <div class="well">
-                    <h4>Blog Categories</h4>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <ul class="list-unstyled">
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-lg-6">
-                            <ul class="list-unstyled">
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                                <li><a href="#">Category Name</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <!-- /.row -->
-                </div>
-
-                <!-- Side Widget Well -->
-                <div class="well">
-                    <h4>Side Widget Well</h4>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore, perspiciatis adipisci accusamus laudantium odit aliquam repellat tempore quos aspernatur vero.</p>
-                </div>
-
-            </div>
-
-        </div>
-        <!-- /.row -->
-
-        <hr>
-
-        <!-- Footer -->
-        <footer>
-            <div class="row">
-                <div class="col-lg-12">
-                    <p>Copyright &copy; Your Website 2014</p>
-                </div>
-            </div>
-            <!-- /.row -->
-        </footer>
-
-    </div>
-    <!-- /.container -->
-
-    <!-- jQuery -->
-    <script src="js/jquery.js"></script>
-
-    <!-- Bootstrap Core JavaScript -->
-    <script src="js/bootstrap.min.js"></script>
-
-</body>
-
-</html>
+<?php  include 'includes/sidebar.php'; ?>     
+<?php  include 'includes/footer.php'; ?>
