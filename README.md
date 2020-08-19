@@ -1,4 +1,4 @@
-# ED01-CMS
+#  Content management system
 ## CMS project 
 
 ### To run this app:
